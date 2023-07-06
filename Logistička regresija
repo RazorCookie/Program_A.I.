@@ -1,0 +1,63 @@
+import pandas as pd
+import numpy as np
+
+eta = 0.1
+
+# Učitavanje trening podataka
+train_data = pd.read_csv('500train_BoW.csv')
+X_train = train_data.drop('TARGET', axis=1)
+y_train = train_data['TARGET']
+
+# Učitavanje testnih podataka
+test_data = pd.read_csv('20test_BoW.csv')
+X_test = test_data.drop('TARGET', axis=1)
+y_test = test_data['TARGET']
+
+number_of_weights = X_train.shape[1]
+W = [0.5] * number_of_weights
+
+outputs = []  # Ovdje će se pohranjivati svi izlazi y-kapica
+errors = []
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+def forwardPass(tezine, inputVektor, target):
+    res = sigmoid(np.dot(tezine, inputVektor))
+    err = 0.5 * ((target - res) ** 2)
+    outputs.append(res)
+    errors.append(err)
+    return [res, err]
+
+def backwardPass(tezine, inputVektor, y_kapica, target):
+    updateaneTezine = []
+    for m in range(len(tezine)):
+        curr_w = tezine[m]
+        parDer = - inputVektor[m] * y_kapica * (1 - y_kapica) * (target - y_kapica)
+        updateanWeight = curr_w - eta * parDer
+        updateaneTezine.append(updateanWeight)
+    return updateaneTezine
+
+def train(trainSet, weights, targets, N=2): #N je broj epoha
+    W = []
+    for _ in range(N):
+        for k in range(len(trainSet)):
+            r = forwardPass(weights, trainSet[k], targets[k])
+            W.append(backwardPass(weights, trainSet[k], r[0], targets[k]))
+    return W  # W je lista listi težina kroz epohe. Na zadnju referiramo s W[-1]
+
+def predict(tezine, inputVektori):
+    predictions = []
+    for inputVektor in inputVektori:
+        res = sigmoid(np.dot(tezine, inputVektor))
+        predictions.append(res)
+    return predictions
+
+inputVektori = X_train.values.tolist()  # Pretvara DataFrame u listu listi
+targeti = y_train.values.tolist()  # Pretvara DataFrame u listu
+
+FINAL_W = train(inputVektori, W, targeti, N=5)[-1]
+testVektori = X_test.values.tolist()  # Pretvara DataFrame u listu listi
+
+PREDIKCIJE = predict(FINAL_W, testVektori)
+print(PREDIKCIJE)
